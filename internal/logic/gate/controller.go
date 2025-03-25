@@ -59,6 +59,7 @@ func newController(groups ...config.PortGroup) *controller {
 	}
 	c.session = newSession()
 	c.view = ui.NewFancy()
+	//c.view = ui.NewSimple()
 
 	return c
 }

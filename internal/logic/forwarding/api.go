@@ -36,6 +36,7 @@ func (m managedForwarder) Describe() string {
 func (m managedForwarder) Run(c model.Controller) {
 
 	// setup port-forwarder
+	c.UpdateProcess(m, model.Restart, "starting port-forwarder...")
 	pf, err := m.createPortForwarder(c.StopChannel())
 	if err != nil {
 		c.UpdateProcess(m, model.Failure, err.Error())
