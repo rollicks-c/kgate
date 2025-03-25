@@ -532,6 +532,7 @@ func (m managedForwarder) Describe() string <span class="cov0" title="0">{
 func (m managedForwarder) Run(c model.Controller) <span class="cov0" title="0">{
 
         // setup port-forwarder
+        c.UpdateProcess(m, model.Restart, "starting port-forwarder...")
         pf, err := m.createPortForwarder(c.StopChannel())
         if err != nil </span><span class="cov0" title="0">{
                 c.UpdateProcess(m, model.Failure, err.Error())
@@ -801,6 +802,7 @@ func newController(groups ...config.PortGroup) *controller <span class="cov0" ti
         }
         c.session = newSession()
         c.view = ui.NewFancy()
+        //c.view = ui.NewSimple()
 
         return c
 }</span>
