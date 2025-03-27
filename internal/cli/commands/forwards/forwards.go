@@ -2,11 +2,12 @@ package forwards
 
 import (
 	"fmt"
+	"github.com/rollicks-c/configcove/profiles"
 	"github.com/rollicks-c/kgate/internal/config"
 	"github.com/rollicks-c/kgate/internal/logic/gate"
 )
 
-func startGroups(allGroups bool, selectedGroups ...string) error {
+func startGroups(profile profiles.Profile[config.Config], allGroups bool, selectedGroups ...string) error {
 
 	// sanity check
 	if allGroups && len(selectedGroups) > 0 {
@@ -14,7 +15,6 @@ func startGroups(allGroups bool, selectedGroups ...string) error {
 	}
 
 	// load data
-	profile := config.Profiles().LoadCurrent()
 	var groups []config.PortGroup
 	if allGroups {
 		groups = profile.Data.Groups

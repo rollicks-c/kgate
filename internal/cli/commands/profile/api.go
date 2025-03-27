@@ -5,6 +5,7 @@ import (
 	"github.com/rollicks-c/kgate/internal/config"
 	"github.com/rollicks-c/term"
 	"github.com/urfave/cli/v2"
+	"strings"
 )
 
 func Switch(c *cli.Context) error {
@@ -80,4 +81,23 @@ func Create(c *cli.Context) error {
 	term.Infof("profile %s created\n", profileName)
 
 	return nil
+}
+
+func Find(exp string) ([]string, bool) {
+
+	// fuzzy match
+	pList := config.Profiles().List()
+	sel := make([]string, 0)
+	for _, p := range pList {
+		if strings.HasPrefix(p, exp) {
+			sel = append(sel, p)
+		}
+	}
+	if len(sel) == 0 {
+		return sel, false
+	}
+	if len(sel) > 1 {
+		return sel, false
+	}
+	return sel, true
 }

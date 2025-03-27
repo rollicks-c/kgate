@@ -12,5 +12,6 @@ func CreateClient() *cli.App {
 	app.Usage = config.Usage
 	app.Commands = createCommands()
 	app.Action = forwards.StartAll
+	app.Flags = []cli.Flag{forwards.FlagProfile}
 	return app
 }
