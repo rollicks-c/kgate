@@ -138,6 +138,7 @@ func CreateClient() *cli.App <span class="cov0" title="0">{
         app.Usage = config.Usage
         app.Commands = createCommands()
         app.Action = forwards.StartAll
+        app.Flags = []cli.Flag{forwards.FlagProfile}
         return app
 }</span>
 </pre>
@@ -145,10 +146,17 @@ func CreateClient() *cli.App <span class="cov0" title="0">{
 		<pre class="file" id="file2" style="display: none">package forwards
 
 import (
+        "fmt"
+        "github.com/rollicks-c/kgate/internal/cli/commands/profile"
+        "github.com/rollicks-c/kgate/internal/config"
         "github.com/urfave/cli/v2"
 )
 
 var (
+        FlagProfile = &amp;cli.StringFlag{
+                Name:    "profile",
+                Aliases: []string{"p"},
+        }
         FlagGroup = &amp;cli.StringSliceFlag{
                 Name:    "group",
                 Aliases: []string{"g"},
@@ -163,23 +171,34 @@ var (
 func Start(c *cli.Context) error <span class="cov0" title="0">{
         selectedGroups := FlagGroup.Get(c)
         allGroups := FlagAll.Get(c)
-        return startGroups(allGroups, selectedGroups...)
+        prof := config.Profiles().LoadCurrent()
+        return startGroups(prof, allGroups, selectedGroups...)
 }</span>
 
 func StartAll(c *cli.Context) error <span class="cov0" title="0">{
-        return startGroups(true)
-}</span>
+        profExp := FlagProfile.Get(c)
+        prof := config.Profiles().LoadCurrent()
+        if profExp != "" </span><span class="cov0" title="0">{
+                list, ok := profile.Find(profExp)
+                if !ok </span><span class="cov0" title="0">{
+                        return fmt.Errorf("no profile found uniquely matching [%s]", profExp)
+                }</span>
+                <span class="cov0" title="0">prof = config.Profiles().Load(list[0], false)</span>
+        }
+        <span class="cov0" title="0">return startGroups(prof, true)</span>
+}
 </pre>
 		
 		<pre class="file" id="file3" style="display: none">package forwards
 
 import (
         "fmt"
+        "github.com/rollicks-c/configcove/profiles"
         "github.com/rollicks-c/kgate/internal/config"
         "github.com/rollicks-c/kgate/internal/logic/gate"
 )
 
-func startGroups(allGroups bool, selectedGroups ...string) error <span class="cov0" title="0">{
+func startGroups(profile profiles.Profile[config.Config], allGroups bool, selectedGroups ...string) error <span class="cov0" title="0">{
 
         // sanity check
         if allGroups &amp;&amp; len(selectedGroups) &gt; 0 </span><span class="cov0" title="0">{
@@ -187,8 +206,7 @@ func startGroups(allGroups bool, selectedGroups ...string) error <span class="co
         }</span>
 
         // load data
-        <span class="cov0" title="0">profile := config.Profiles().LoadCurrent()
-        var groups []config.PortGroup
+        <span class="cov0" title="0">var groups []config.PortGroup
         if allGroups </span><span class="cov0" title="0">{
                 groups = profile.Data.Groups
         }</span> else<span class="cov0" title="0"> {
@@ -253,6 +271,7 @@ import (
         "github.com/rollicks-c/kgate/internal/config"
         "github.com/rollicks-c/term"
         "github.com/urfave/cli/v2"
+        "strings"
 )
 
 func Switch(c *cli.Context) error <span class="cov0" title="0">{
@@ -329,6 +348,25 @@ func Create(c *cli.Context) error <span class="cov0" title="0">{
 
         return nil</span>
 }
+
+func Find(exp string) ([]string, bool) <span class="cov0" title="0">{
+
+        // fuzzy match
+        pList := config.Profiles().List()
+        sel := make([]string, 0)
+        for _, p := range pList </span><span class="cov0" title="0">{
+                if strings.HasPrefix(p, exp) </span><span class="cov0" title="0">{
+                        sel = append(sel, p)
+                }</span>
+        }
+        <span class="cov0" title="0">if len(sel) == 0 </span><span class="cov0" title="0">{
+                return sel, false
+        }</span>
+        <span class="cov0" title="0">if len(sel) &gt; 1 </span><span class="cov0" title="0">{
+                return sel, false
+        }</span>
+        <span class="cov0" title="0">return sel, true</span>
+}
 </pre>
 		
 		<pre class="file" id="file6" style="display: none">package profile
@@ -347,22 +385,16 @@ func showProfile() <span class="cov0" title="0">{
 func switchProfile(exp string) error <span class="cov0" title="0">{
 
         // fuzzy match
-        pList := config.Profiles().List()
-        sel := make([]string, 0)
-        for _, p := range pList </span><span class="cov0" title="0">{
-                if strings.HasPrefix(p, exp) </span><span class="cov0" title="0">{
-                        sel = append(sel, p)
-                }</span>
-        }
-        <span class="cov0" title="0">if len(sel) == 0 </span><span class="cov0" title="0">{
+        list, _ := Find(exp)
+        if len(list) == 0 </span><span class="cov0" title="0">{
                 term.Failf("no profile found matching [%s]\n", exp)
                 return nil
         }</span>
-        <span class="cov0" title="0">if len(sel) &gt; 1 </span><span class="cov0" title="0">{
-                term.Failf("multiple profiles found matching [%s]: %s\n", exp, strings.Join(sel, ", "))
+        <span class="cov0" title="0">if len(list) &gt; 1 </span><span class="cov0" title="0">{
+                term.Failf("multiple profiles found matching [%s]: %s\n", exp, strings.Join(list, ", "))
                 return nil
         }</span>
-        <span class="cov0" title="0">profileName := sel[0]
+        <span class="cov0" title="0">profileName := list[0]
 
         // switch
         err := config.Profiles().Switch(profileName)
